@@ -1,5 +1,8 @@
-import datetime, os
-import sys, tweepy, pandas as pd
+import datetime
+import os
+import tweepy
+import pandas as pd
+from typing import Optional
 import logging
 from sqlalchemy import create_engine
 from tweepy import Stream, StreamListener
@@ -14,25 +17,9 @@ URL = os.getenv('Redshift_URL')
 # getting the engine for the redshift ready
 engine = create_engine(URL)
 logger = logging.getLogger(__name__)
-# authorization tokens
-q = sys.argv
-
-per=q[3]
-
-
-consumer_key = os.getenv('{}_c_key'.format(per))
-consumer_secret = os.getenv('{}_c_secret'.format(per))
-access_key = os.getenv('{}_a_key'.format(per))
-access_secret = os.getenv('{}_a_secret'.format(per))
-
-
-
-# Creating the authentication object
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-# Setting your access token and secret
-auth.set_access_token(access_key, access_secret)
-# Creating the API object while passing in auth information
-api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+# authorization tokens will be created in start_stream
+auth = None
+api: Optional[tweepy.API] = None
 
 
 def clean(liste, name, rep):
@@ -154,12 +141,24 @@ def get_active_stream():
     return l.liste_tweets
 
 
-if __name__ == '__main__':
-    logger.info("we are in the Live stream")
+def start_stream(query, time, per):
+    global auth, api
+    consumer_key = os.getenv(f"{per}_c_key")
+    consumer_secret = os.getenv(f"{per}_c_secret")
+    access_key = os.getenv(f"{per}_a_key")
+    access_secret = os.getenv(f"{per}_a_secret")
 
-    query = q[1]
-    time = q[2]
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_key, access_secret)
+    api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+
+    logger.info("we are in the Live stream")
     date = datetime.datetime.now()
     date += datetime.timedelta(minutes=time)
     main(query, date)
     logger.info("done")
+
+
+if __name__ == '__main__':
+    q = sys.argv
+    start_stream(q[1], int(q[2]), q[3])

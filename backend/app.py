@@ -1,9 +1,8 @@
 import requests
-import subprocess
 import logging
+from threading import Thread
 
 import os
-import pymysql
 from flask import Flask, jsonify
 from flask_cors import CORS, cross_origin
 from sendgrid import SendGridAPIClient
@@ -20,6 +19,8 @@ from .Rds_Handle import (
     get_previous_studies,
     get_analysed_study,
 )
+from . import SearchTweets
+from .db import conn
 
 
 SENDGRID_API_KEY = os.getenv('sendGripKey')
@@ -40,12 +41,6 @@ logger = logging.getLogger(__name__)
 
 
 
-host = os.getenv('host_RDS')
-PORT = int(os.getenv('RDS_port'))
-USER = os.getenv('RDS_user')
-PASS = os.getenv('RDS_pass')
-REGION = os.getenv('RDS_region')
-DBNAME = os.getenv('RDS_db')
 
 
 mail_settings = {
@@ -59,7 +54,6 @@ mail_settings = {
 
 app.config.update(mail_settings)
 
-conn = pymysql.connect(host=host, user=USER, port=PORT, passwd=PASS, database=DBNAME)
 sg = SendGridAPIClient(SENDGRID_API_KEY)
 
 
@@ -90,12 +84,10 @@ def search(entity, email, date):
                     update_previous_study(study=entity, report=False, start=True, conn=conn)
                     logger.info(f"{entity} {email}")
                     stop_date = date
-                    subprocess.Popen(
-                        'python backend/SearchTweets.py {} {} {} {}'.format(
-                            entity, email, stop_date, per
-                        ),
-                        shell=True,
-                    )
+                    Thread(
+                        target=SearchTweets.run_search,
+                        args=(entity, email, stop_date, per),
+                    ).start()
                     return jsonify(
                         {
                             "message": "Your request has been successfully submitted a custom link will be sent to you by email once the results are ready!",
