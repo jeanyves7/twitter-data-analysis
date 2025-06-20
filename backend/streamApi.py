@@ -11,10 +11,10 @@ from geopy.geocoders import Nominatim
 from queue import Queue
 from threading import Thread
 
-# # URL to connect to redshift
-URL = os.getenv('Redshift_URL')
+# Database connection URL (PostgreSQL / Redshift)
+URL = os.getenv('POSTGRES_URL') or os.getenv('Redshift_URL') or os.getenv('REDSHIFT_URL')
 
-# getting the engine for the redshift ready
+# create SQLAlchemy engine
 engine = create_engine(URL)
 logger = logging.getLogger(__name__)
 # authorization tokens will be created in start_stream

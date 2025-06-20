@@ -20,7 +20,7 @@ from collections import Counter
 # import enchant
 from english_words import english_words_set
 
-engine = create_engine(os.getenv("REDSHIFT_URL"))
+engine = create_engine(os.getenv("POSTGRES_URL") or os.getenv("REDSHIFT_URL") or os.getenv("Redshift_URL"))
 logger = logging.getLogger(__name__)
 
 # df.drop_duplicates(subset="text", keep=False, inplace=True)

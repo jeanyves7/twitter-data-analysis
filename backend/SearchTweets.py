@@ -14,11 +14,10 @@ from geopy.geocoders import Nominatim
 
 geolocator = Nominatim(user_agent="twitter_analysis")
 
-# # URL to connect to redshift
+# Database connection URL (PostgreSQL / Redshift)
+URL = os.getenv('POSTGRES_URL') or os.getenv('Redshift_URL') or os.getenv('REDSHIFT_URL')
 
-URL = os.getenv('Redshift_URL')
-
-# getting the engine for the redshift ready
+# create SQLAlchemy engine
 engine = create_engine(URL)
 
 logger = logging.getLogger(__name__)
