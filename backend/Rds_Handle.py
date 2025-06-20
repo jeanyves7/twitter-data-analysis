@@ -1,5 +1,8 @@
 from pymysql import Connection
 import pandas as pd, subprocess
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .DatabaseConnection import clean
 import datetime
@@ -21,7 +24,7 @@ def get_available_search_engine(conn: Connection):
             return None
 
         for i in df['name']:
-            print(i)
+            logger.debug(i)
         data = data[0]
         cur = conn.cursor()
         query = "Update engine_search set status='true' where name=%s"
@@ -31,7 +34,7 @@ def get_available_search_engine(conn: Connection):
         return df['name'][0]
 
     except Exception as e:
-        print("Error engine occurred in get_available_search_engine: {}".format(e.__str__()))
+        logger.error("Error engine occurred in get_available_search_engine: {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -41,7 +44,7 @@ def ongoing_search(conn: Connection, check_email: bool, name="", email="", ):
     # cleaning the data
     name = clean([' ', '-'], name, '_')
     cur = None
-    print("checking for ongoing search for {0}".format(name))
+    logger.info("checking for ongoing search for {0}".format(name))
     try:
 
         if check_email:
@@ -58,7 +61,7 @@ def ongoing_search(conn: Connection, check_email: bool, name="", email="", ):
         return False
 
     except Exception as e:
-        print("Error occurred in ongoing_search : {}".format(e.__str__()))
+        logger.error("Error occurred in ongoing_search : {}".format(e.__str__()))
 
 
 def update_ongoing_search(name, conn: Connection, engine, email):
@@ -72,7 +75,7 @@ def update_ongoing_search(name, conn: Connection, engine, email):
         cur.close()
         return False
     except Exception as e:
-        print("Error occurred in update_ongoing_search: {}".format(e.__str__()))
+        logger.error("Error occurred in update_ongoing_search: {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -93,7 +96,7 @@ def update_requested_study(study, insert: bool, conn: Connection, email=""):
         cur.execute(query, params)
         conn.commit()
     except Exception as e:
-        print("Error in update_requested_study : {}".format(e.__str__()))
+        logger.error("Error in update_requested_study : {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -107,7 +110,7 @@ def post_waiting_query(email, study, stop_date, conn: Connection):
         cur.execute(query, (email, study, stop_date))
         conn.commit()
     except Exception as e:
-        print("Error occurred in post_waiting_query : {}".format(e.__str__()))
+        logger.error("Error occurred in post_waiting_query : {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -143,7 +146,7 @@ def update_previous_study(study, report: bool, start: bool, conn: Connection):
                 cur.execute(query, (date, study))
                 conn.commit()
     except Exception as e:
-        print("Error occurred in update_previous_study : {}".format(e.__str__()))
+        logger.error("Error occurred in update_previous_study : {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -164,7 +167,7 @@ def get_waiting_query(conn: Connection):
             cur.execute(query, (email,))
             conn.commit()
             per = get_available_search_engine(conn)
-            print(per)
+            logger.debug(per)
             update_ongoing_search(study, conn, per, email)
             update_requested_study(study=study, email=email, insert=True, conn=conn)
             update_previous_study(study=study, report=False, start=True, conn=conn)
@@ -174,10 +177,10 @@ def get_waiting_query(conn: Connection):
                 ),
                 shell=True,
             )
-            print("opened query")
+            logger.info("opened query")
 
     except Exception as e:
-        print("Error occurred in get_waiting_query : {}".format(e.__str__()))
+        logger.error("Error occurred in get_waiting_query : {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -190,7 +193,7 @@ def close_engine_search(search_query, conn: Connection):
         query = " Select engine from ongoing_search where query=%s "
         df = pd.read_sql(sql=query, con=conn, params=(search_query,))
         engine = df.iloc[0]
-        print("closing engine:" + engine[0])
+        logger.info("closing engine:" + engine[0])
         cur = conn.cursor()
         query = "Update engine_search set status='false' where name=%s"
         cur.execute(query, (engine[0],))
@@ -199,7 +202,7 @@ def close_engine_search(search_query, conn: Connection):
         cur.execute(query, (search_query,))
         conn.commit()
     except Exception as e:
-        print("Error occurred in close_engine_search {}".format(e.__str__()))
+        logger.error("Error occurred in close_engine_search {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -215,7 +218,7 @@ def create_analyse_table(study, conn: Connection):
         cur.execute(query)
         conn.commit()
     except Exception as e:
-        print("Error in create_analyse_table : {}".format(e.__str__()))
+        logger.error("Error in create_analyse_table : {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -279,7 +282,7 @@ def insert_analysed_data(table, number_tweets, positive, neutral, negative, comp
         conn.commit()
 
     except Exception as e:
-        print("Error occurred in insert_analysed_data: {}".format(e))
+        logger.error("Error occurred in insert_analysed_data: {}".format(e))
     finally:
         if cur is not None:
             cur.close()
@@ -294,7 +297,7 @@ def update_gender_percentage(study, male, female, conn: Connection):
         cur.execute(query, (male, female, study))
         conn.commit()
     except Exception as e:
-        print("Error occurred in update_gender_percentage {}".format(e.__str__()))
+        logger.error("Error occurred in update_gender_percentage {}".format(e.__str__()))
     finally:
         if cur is not None:
             cur.close()
@@ -322,7 +325,7 @@ def get_previous_studies(conn: Connection):
         }
         return j_data
     except Exception as e:
-        print("Error occurred in get_previous_studies: {}".format(e.__str__()))
+        logger.error("Error occurred in get_previous_studies: {}".format(e.__str__()))
 
 
 def get_hash_id(study, conn: Connection):
@@ -332,7 +335,7 @@ def get_hash_id(study, conn: Connection):
         data = df.iloc[0][0]
         return data
     except Exception as e:
-        print("Error occurred in get_hash_id: {0}".format(e.__str__()))
+        logger.error("Error occurred in get_hash_id: {0}".format(e.__str__()))
 
 
 def split_words(cloud, sep=" ", first="text", second="value"):
@@ -343,13 +346,13 @@ def split_words(cloud, sep=" ", first="text", second="value"):
         list_word = []
         for i in cloud:
             word = i.split(sep)
-            print(word)
-            print("the words : {}".format(word))
+            logger.debug(word)
+            logger.debug("the words : {}".format(word))
             j_format = {first: str(word[0]), second: str(word[1])}
             list_word.append(j_format)
         return list_word
     except Exception as e:
-        print("Error occurred with {} as {}".format(cloud, e.__str__()))
+        logger.error("Error occurred with {} as {}".format(cloud, e.__str__()))
 
 
 def get_analysed_study(study_id, conn: Connection):
@@ -372,11 +375,11 @@ def get_analysed_study(study_id, conn: Connection):
         negative = str(data[6])
         compound = data[7]
 
-        print("word_cloud")
+        logger.debug("word_cloud")
         word_cloud = str(data[8]).split("_")
         list_word = split_words(word_cloud)
 
-        print("company_cloud")
+        logger.debug("company_cloud")
         company_cloud = str(data[9]).split("_")
         company_word = split_words(company_cloud, sep=" value:")
 
@@ -384,11 +387,11 @@ def get_analysed_study(study_id, conn: Connection):
         company = str(data[11])
         influ = str(data[12])
 
-        print("hash_cloud")
+        logger.debug("hash_cloud")
         hash_cloud = str(data[13]).split("_")
         hash_word = split_words(hash_cloud)
 
-        print("countries")
+        logger.debug("countries")
         countries_cloud = str(data[14]).split("_")
         countries_word = split_words(countries_cloud, first="long", second="lat")
 
@@ -400,14 +403,14 @@ def get_analysed_study(study_id, conn: Connection):
         retweets = str(data[18])
 
         most_liked = str(data[19]).split("Mdp20Sep")
-        print(most_liked)
+        logger.debug(most_liked)
         most_liked_tweet = {"userName": most_liked[0],
                             "tweet_text": most_liked[1],
                             "number_of_likes": most_liked[2],
                             "sentiment_score": most_liked[3]}
 
         most_retweeted = str(data[20]).split("Mdp20Sep")
-        print(most_retweeted)
+        logger.debug(most_retweeted)
         most_retweeted_tweet = {"userName": most_retweeted[0],
                                 "tweet_text": most_retweeted[1],
                                 "number_of_likes": most_retweeted[2],
@@ -439,4 +442,4 @@ def get_analysed_study(study_id, conn: Connection):
         }
         return j_data
     except Exception as e:
-        print("Error occurred in get_analysed_study: {}".format(e.__str__()))
+        logger.error("Error occurred in get_analysed_study: {}".format(e.__str__()))

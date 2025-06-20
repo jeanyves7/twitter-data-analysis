@@ -1,5 +1,6 @@
 import datetime, os
 import sys, tweepy, pandas as pd
+import logging
 from sqlalchemy import create_engine
 from tweepy import Stream, StreamListener
 from .SearchTweets import check_time
@@ -12,6 +13,7 @@ URL = os.getenv('Redshift_URL')
 
 # getting the engine for the redshift ready
 engine = create_engine(URL)
+logger = logging.getLogger(__name__)
 # authorization tokens
 q = sys.argv
 
@@ -45,7 +47,7 @@ def insert_panda(lp, name):
         data = pd.DataFrame(lp)
         data.to_sql(name, engine, index=False, if_exists='append')
     except Exception as e:
-        print("An error occurred while inserting the data " + e.__str__())
+        logger.error("An error occurred while inserting the data " + e.__str__())
 
 
 def handle_tweet(tweet, ex):
@@ -89,7 +91,7 @@ def handle_tweet(tweet, ex):
         dicti['text'] = p
         return dicti
     except Exception as e:
-        print("Error occurred in handling tweet {}".format(e))
+        logger.error("Error occurred in handling tweet {}".format(e))
 
 
 class StdOutListener(StreamListener):
@@ -123,15 +125,15 @@ class StdOutListener(StreamListener):
         while True:
             if self.tweet_count % 500 == 0:
                 for i in self.liste_tweets:
-                    print(i)
-                print("adding to the database")
+                    logger.debug(i)
+                logger.info("adding to the database")
                 insert_panda(self.liste_tweets, self.query)
-                print("done inserting")
+                logger.info("done inserting")
                 break
             
 
     def on_error(self, status):
-        print(status)
+        logger.error(status)
 
 
 l: StdOutListener = StdOutListener()
@@ -145,7 +147,7 @@ def main(query, stop):
         stream = Stream(auth=auth, listener=l, tweet_mode='extended')
         stream.filter(track=query, languages=['en'])
     except Exception as e:
-        print("Error occurred in stream api : {}".format(e.__str__()))
+        logger.error("Error occurred in stream api : {}".format(e.__str__()))
 
 
 def get_active_stream():
@@ -153,11 +155,11 @@ def get_active_stream():
 
 
 if __name__ == '__main__':
-    print("we are in the Live stream")
+    logger.info("we are in the Live stream")
 
     query = q[1]
     time = q[2]
     date = datetime.datetime.now()
     date += datetime.timedelta(minutes=time)
     main(query, date)
-    print("done")
+    logger.info("done")

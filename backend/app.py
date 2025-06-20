@@ -1,5 +1,6 @@
 import requests
 import subprocess
+import logging
 
 import os
 import pymysql
@@ -33,6 +34,10 @@ app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 
 host = os.getenv('host_RDS')
@@ -62,9 +67,9 @@ sg = SendGridAPIClient(SENDGRID_API_KEY)
 @cross_origin()
 def hello_world():
     try:
-        print(get_date())
+        logger.info(get_date())
     except Exception as e:
-        print(e.__str__())
+        logger.error(e)
 
     user = os.getenv('KEY')
     term = "THE USER VARIABLE IS {}".format(user)
@@ -83,7 +88,7 @@ def search(entity, email, date):
                     update_ongoing_search(entity, conn, per, email)
                     update_requested_study(study=entity, email=email, insert=True, conn=conn)
                     update_previous_study(study=entity, report=False, start=True, conn=conn)
-                    print(entity, " ", email)
+                    logger.info(f"{entity} {email}")
                     stop_date = date
                     subprocess.Popen(
                         'python backend/SearchTweets.py {} {} {} {}'.format(
@@ -137,7 +142,7 @@ def get_studies():
     conn.commit()
     try:
         data = get_previous_studies(conn)
-        print(data)
+        logger.info(data)
         return jsonify(data), 200
     except Exception as e:
         return jsonify({"message": "Internal error, please try again later {}".format(e)}), 404
@@ -149,7 +154,7 @@ def get_study(study_id):
     conn.commit()
     try:
         data = get_analysed_study(study_id, conn)
-        print(data)
+        logger.info(data)
         return jsonify(data), 200
     except Exception as e:
         return jsonify({"message": "Internal error, please try again later {}".format(e)}), 404
