@@ -1,9 +1,13 @@
 import pandas as pd, subprocess, sys, datetime, tweepy as tw, os
 from configparser import ConfigParser
 from sqlalchemy import create_engine
-from DatabaseConnection import clean, connect
-from app import conn
-from Rds_Handle import get_waiting_query, close_engine_search, update_previous_study
+from .DatabaseConnection import clean, connect
+from .app import conn
+from .Rds_Handle import (
+    get_waiting_query,
+    close_engine_search,
+    update_previous_study,
+)
 from geopy.geocoders import Nominatim
 
 geolocator = Nominatim(user_agent="twitter_analysis")
@@ -139,14 +143,19 @@ if __name__ == "__main__":
         auth.set_access_token(headers[2], headers[3])
         api = tw.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
         # Opening the liveStreamApi  algorithm
-        subprocess.Popen('python streamApi.py {0} {1} {2}'.format(query, time, per), shell=True)
+        subprocess.Popen(
+            'python backend/streamApi.py {0} {1} {2}'.format(query, time, per),
+            shell=True,
+        )
         get_tweepy_stream(query, date)
         close_engine_search(query, conn)
         update_previous_study(study=query, report=False, start=False, conn=conn)
         get_waiting_query(conn)
         # calling the data analysis algorithm
         query = clean([' ', '-'], query, '_')
-        subprocess.Popen('python SentimentAnalysis.py {}'.format(query), shell=True)
+        subprocess.Popen(
+            'python backend/SentimentAnalysis.py {}'.format(query), shell=True
+        )
         print("done")
     except Exception as e:
         print("Error occurred in searchTweet {}".format(e.__str__()))

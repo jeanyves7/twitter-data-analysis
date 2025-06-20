@@ -1,6 +1,6 @@
-import pandas as pd,os
-from app import conn
-from Rds_Handle import update_requested_study, get_hash_id
+import pandas as pd, os
+from .app import conn
+from .Rds_Handle import update_requested_study, get_hash_id
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 

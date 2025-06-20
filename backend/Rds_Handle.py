@@ -1,7 +1,7 @@
 from pymysql import Connection
 import pandas as pd, subprocess
 
-from DatabaseConnection import clean
+from .DatabaseConnection import clean
 import datetime
 import hashlib
 
@@ -170,7 +170,12 @@ def get_waiting_query(conn: Connection):
             update_ongoing_search(study, conn, per, email)
             update_requested_study(study=study, email=email, insert=True, conn=conn)
             update_previous_study(study=study, report=False, start=True, conn=conn)
-            subprocess.Popen('python SearchTweets.py {} {} {} {}'.format(study, email, stop_date, per), shell=True)
+            subprocess.Popen(
+                'python backend/SearchTweets.py {} {} {} {}'.format(
+                    study, email, stop_date, per
+                ),
+                shell=True,
+            )
             print("opened query")
 
     except Exception as e:

@@ -2,7 +2,7 @@ import datetime, os
 import sys, tweepy, pandas as pd
 from sqlalchemy import create_engine
 from tweepy import Stream, StreamListener
-from SearchTweets import check_time
+from .SearchTweets import check_time
 from geopy.geocoders import Nominatim
 from queue import Queue
 from threading import Thread
