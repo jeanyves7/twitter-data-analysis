@@ -29,5 +29,11 @@ cleaned from white spaces and ",".
 and we will update the ongoing_Search table so we can keep track of the engine name and the query
 that are being performed. In the end we will rearrange everything to the way it was just before
 the start of the search.
+
+### Environment Variables
+
+The application expects a connection string for Amazon Redshift to be provided
+via the `REDSHIFT_URL` environment variable. Set this variable to a valid
+SQLAlchemy connection URI before running the analysis scripts.
      
      
