@@ -1,4 +1,3 @@
-import subprocess
 import logging
 
 import pandas as pd
@@ -15,24 +14,15 @@ from .Rds_Handle import (
     update_previous_study,
     get_analysed_study,
 )
-from .app import conn
+from .db import conn
+from . import GenderClassification
 from collections import Counter
 # import enchant
 from english_words import english_words_set
 
-q = sys.argv
-
-# available tables: pizza, covid, popcorn, vodka, dollar, quarantine, burger
-
 engine = create_engine(os.getenv("REDSHIFT_URL"))
 logger = logging.getLogger(__name__)
 
-study = q[1]
-query = "SELECT * FROM {}".format(study)
-
-df = pd.read_sql(sql=query, con=engine)
-# Saves the number of tweets in a variable
-number_of_tweets = len(df.index)
 # df.drop_duplicates(subset="text", keep=False, inplace=True)
 
 sentimentAnalyzer = SentimentIntensityAnalyzer()
@@ -141,9 +131,9 @@ def sentiment_scores(tweets):
 overall_compound_score = 0
 
 
-def get_overall_score():
+def get_overall_score(tweet_count):
     global overall_compound_score
-    overall_compound_score = all_compound_scores / number_of_tweets
+    overall_compound_score = all_compound_scores / tweet_count
     return overall_compound_score
 
 
@@ -314,7 +304,10 @@ def save_most_retweets(row):
     return most_retweets
 
 
-if __name__ == '__main__':
+def analyze_sentiment(study):
+    query = "SELECT * FROM {}".format(study)
+    df = pd.read_sql(sql=query, con=engine)
+    number_of_tweets = len(df.index)
     logger.debug(df.head())
     try:
         date = get_date()
@@ -333,7 +326,7 @@ if __name__ == '__main__':
         logger.info("Number of positive tweets: " + str(positive_tweets))
         logger.info("Number of neutral tweets: " + str(neutral_tweets))
         logger.info("Number of negative tweets: " + str(negative_tweets))
-        logger.info("Overall Compound Score is " + str(get_overall_score()))
+        logger.info("Overall Compound Score is " + str(get_overall_score(number_of_tweets)))
         logger.info("Overall Sentiment is " + get_overall_sentiment())
 
         # Preprocess tweets and generate wordcloud
@@ -381,20 +374,35 @@ if __name__ == '__main__':
         logger.debug(most_retweet)
         logger.info("Number of retweets = " + str(rt_number))
 
-        insert_analysed_data(study_update, number_tweets=number_of_tweets, positive=positive_tweets,
-                             neutral=neutral_tweets,
-                             negative=negative_tweets, compound=get_overall_sentiment(), word_cloud=word_cloud_list,
-                             company_cloud=wordcloud_companies, number_users=percentage_of_other_users,
-                             companies=percentage_of_companies, number_influ=percentage_of_influencers,
-                             hashtag_cloud=hashtag_word_cloud, countries_cloud=geo_coordinates, likes=likes_number,
-                             retweets=rt_number, most_liked=most_liked, most_retweeted=most_retweet, conn=conn)
-        subprocess.Popen(
-            'python backend/GenderClassification.py {0}'.format(study_update),
-            shell=True,
+        insert_analysed_data(
+            study_update,
+            number_tweets=number_of_tweets,
+            positive=positive_tweets,
+            neutral=neutral_tweets,
+            negative=negative_tweets,
+            compound=get_overall_sentiment(),
+            word_cloud=word_cloud_list,
+            company_cloud=wordcloud_companies,
+            number_users=percentage_of_other_users,
+            companies=percentage_of_companies,
+            number_influ=percentage_of_influencers,
+            hashtag_cloud=hashtag_word_cloud,
+            countries_cloud=geo_coordinates,
+            likes=likes_number,
+            retweets=rt_number,
+            most_liked=most_liked,
+            most_retweeted=most_retweet,
+            conn=conn,
         )
+        GenderClassification.classify_gender(study_update)
 
     except Exception as e:
         logger.error("Error occurred in Analysing tweets {}".format(e.__str__()))
 
     finally:
         sys.exit(0)
+
+
+if __name__ == '__main__':
+    q = sys.argv
+    analyze_sentiment(q[1])

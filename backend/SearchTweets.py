@@ -1,14 +1,15 @@
-import pandas as pd, subprocess, sys, datetime, tweepy as tw, os
+import pandas as pd, sys, datetime, tweepy as tw, os
 import logging
 from configparser import ConfigParser
 from sqlalchemy import create_engine
 from .DatabaseConnection import clean, connect
-from .app import conn
+from .db import conn
 from .Rds_Handle import (
     get_waiting_query,
     close_engine_search,
     update_previous_study,
 )
+from . import streamApi, SentimentAnalysis
 from geopy.geocoders import Nominatim
 
 geolocator = Nominatim(user_agent="twitter_analysis")
@@ -130,39 +131,30 @@ def get_tweepy_stream(tweepy_query: str, stop_date, country=""):
         logger.error("Error occurred {}".format(e.__str__()))
 
 
-if __name__ == "__main__":
+def run_search(query, email, stop_date, per):
     try:
-        q = sys.argv
-        query = q[1]
-        to = q[2]
-        # incrementing the stop time
-        time = int(q[3])
-        per = q[4]
+        time = int(stop_date)
         date = datetime.datetime.now()
-        #date += datetime.timedelta(minutes=time)
         date += datetime.timedelta(days=time)
         logger.debug(f"{date.day}  {date.month}  {date.minute}  {date.hour}")
-        # creating the table if not exists
         connect(query)
-        # getting the credentials
         headers = create_headers(per)
         auth = tw.OAuthHandler(headers[0], headers[1])
         auth.set_access_token(headers[2], headers[3])
+        global api
         api = tw.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
-        # Opening the liveStreamApi  algorithm
-        subprocess.Popen(
-            'python backend/streamApi.py {0} {1} {2}'.format(query, time, per),
-            shell=True,
-        )
+        streamApi.start_stream(query, time, per)
         get_tweepy_stream(query, date)
         close_engine_search(query, conn)
         update_previous_study(study=query, report=False, start=False, conn=conn)
         get_waiting_query(conn)
-        # calling the data analysis algorithm
-        query = clean([' ', '-'], query, '_')
-        subprocess.Popen(
-            'python backend/SentimentAnalysis.py {}'.format(query), shell=True
-        )
+        query_clean = clean([' ', '-'], query, '_')
+        SentimentAnalysis.analyze_sentiment(query_clean)
         logger.info("done")
     except Exception as e:
         logger.error("Error occurred in searchTweet {}".format(e.__str__()))
+
+
+if __name__ == "__main__":
+    q = sys.argv
+    run_search(q[1], q[2], q[3], q[4])

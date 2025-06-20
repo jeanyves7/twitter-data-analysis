@@ -20,20 +20,12 @@ from .Rds_Handle import (
     update_previous_study,
     update_gender_percentage,
 )
-from .app import conn
+from .db import conn
 
 # nltk.download('stopwords')
 
 engine = create_engine(os.getenv("REDSHIFT_URL"))
 logger = logging.getLogger(__name__)
-q = sys.argv
-
-# study = 'amazon'
-study=q[1]
-
-query = "SELECT * FROM {}".format(study)
-
-df = pd.read_sql(sql=query, con=engine)
 
 data = pd.read_csv('./ClassificationDataSet.csv', encoding='latin-1')
 
@@ -112,31 +104,34 @@ def has_nan(description):
     return description
 
 
-if __name__ == '__main__':
-    has_nan_data = has_nan(data[['description']])
-    data = pd.concat([data, has_nan_data], axis=1)
-    data['description'].fillna("", inplace=True)
+def classify_gender(study):
+    query = "SELECT * FROM {}".format(study)
+    df = pd.read_sql(sql=query, con=engine)
 
-    has_nan_df = has_nan(df[['description']])
+    has_nan_data = has_nan(data[["description"]])
+    data_mod = pd.concat([data, has_nan_data], axis=1)
+    data_mod["description"].fillna("", inplace=True)
+
+    has_nan_df = has_nan(df[["description"]])
     df = pd.concat([df, has_nan_df], axis=1)
-    df['description'].fillna("", inplace=True)
+    df["description"].fillna("", inplace=True)
 
-    data['text'] = data['text'].map(lambda text: clean_tweet(text))
-    data['description'] = data['description'].map(lambda description: clean_tweet(description))
-    data['text_description'] = data['text'].str.cat(data['description'], sep=' ')
+    data_mod["text"] = data_mod["text"].map(lambda text: clean_tweet(text))
+    data_mod["description"] = data_mod["description"].map(lambda description: clean_tweet(description))
+    data_mod["text_description"] = data_mod["text"].str.cat(data_mod["description"], sep=" ")
 
-    df['text'] = df['text'].map(lambda text: clean_tweet(text))
-    df['description'] = df['description'].map(lambda description: clean_tweet(description))
-    df['text_description'] = df['text'].str.cat(df['description'], sep=' ')
+    df["text"] = df["text"].map(lambda text: clean_tweet(text))
+    df["description"] = df["description"].map(lambda description: clean_tweet(description))
+    df["text_description"] = df["text"].str.cat(df["description"], sep=" ")
 
     tfidf = TfidfVectorizer()
-    tfidf = tfidf.fit(data['text_description'])
+    tfidf = tfidf.fit(data_mod["text_description"])
     encoder = LabelEncoder()
 
-    y_labeled = encoder.fit_transform(data['gender'])
-    X_labeled = tfidf.transform(data['text_description'])
+    y_labeled = encoder.fit_transform(data_mod["gender"])
+    X_labeled = tfidf.transform(data_mod["text_description"])
 
-    X_unlabeled = tfidf.transform(df['text_description'])
+    X_unlabeled = tfidf.transform(df["text_description"])
 
     nb = MultinomialNB()
     nb = nb.fit(X_labeled, y_labeled)
@@ -148,8 +143,8 @@ if __name__ == '__main__':
 
     get_gender_nb(df['gender'])
     logger.info("Number of users: ")
-    nb = get_gender_percentage()
-    logger.info(str(nb))
+    nb_users = get_gender_percentage()
+    logger.info(str(nb_users))
     logger.info("female and male numbers: " + str(female) + ", " + str(male))
     logger.info(
         "female and male percentage: " + str(female_percentage) + ", " + str(male_percentage)
@@ -157,3 +152,8 @@ if __name__ == '__main__':
     update_gender_percentage(study=study, male=male_percentage, female=female_percentage, conn=conn)
     update_previous_study(study, report=True, start=False, conn=conn)
     send_mail(study)
+
+
+if __name__ == '__main__':
+    q = sys.argv
+    classify_gender(q[1])
