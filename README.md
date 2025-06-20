@@ -35,5 +35,3 @@ the start of the search.
 The application expects a connection string for Amazon Redshift to be provided
 via the `REDSHIFT_URL` environment variable. Set this variable to a valid
 SQLAlchemy connection URI before running the analysis scripts.
-     
-     
