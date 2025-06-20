@@ -8,8 +8,17 @@ from flask_cors import CORS, cross_origin
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-from Rds_Handle import get_available_search_engine, ongoing_search, update_ongoing_search, post_waiting_query, \
-    update_requested_study, get_date, update_previous_study, get_previous_studies, get_analysed_study
+from .Rds_Handle import (
+    get_available_search_engine,
+    ongoing_search,
+    update_ongoing_search,
+    post_waiting_query,
+    update_requested_study,
+    get_date,
+    update_previous_study,
+    get_previous_studies,
+    get_analysed_study,
+)
 
 
 SENDGRID_API_KEY = os.getenv('sendGripKey')
@@ -76,8 +85,12 @@ def search(entity, email, date):
                     update_previous_study(study=entity, report=False, start=True, conn=conn)
                     print(entity, " ", email)
                     stop_date = date
-                    subprocess.Popen('python SearchTweets.py {} {} {} {}'.format(entity, email, stop_date, per),
-                                     shell=True)
+                    subprocess.Popen(
+                        'python backend/SearchTweets.py {} {} {} {}'.format(
+                            entity, email, stop_date, per
+                        ),
+                        shell=True,
+                    )
                     return jsonify(
                         {
                             "message": "Your request has been successfully submitted a custom link will be sent to you by email once the results are ready!",

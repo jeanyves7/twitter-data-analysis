@@ -6,8 +6,14 @@ from sqlalchemy import create_engine
 import re
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import spacy, sys
-from Rds_Handle import get_date, create_analyse_table, insert_analysed_data, update_previous_study, get_analysed_study
-from app import conn
+from .Rds_Handle import (
+    get_date,
+    create_analyse_table,
+    insert_analysed_data,
+    update_previous_study,
+    get_analysed_study,
+)
+from .app import conn
 from collections import Counter
 # import enchant
 from english_words import english_words_set
@@ -380,7 +386,10 @@ if __name__ == '__main__':
                              companies=percentage_of_companies, number_influ=percentage_of_influencers,
                              hashtag_cloud=hashtag_word_cloud, countries_cloud=geo_coordinates, likes=likes_number,
                              retweets=rt_number, most_liked=most_liked, most_retweeted=most_retweet, conn=conn)
-        subprocess.Popen('python GenderClassification.py {0}'.format(study_update),shell=True)
+        subprocess.Popen(
+            'python backend/GenderClassification.py {0}'.format(study_update),
+            shell=True,
+        )
 
     except Exception as e:
         print("Error occurred in Analysing tweets {}".format(e.__str__()))

@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 import re
-from sendMail import send_mail
+from .sendMail import send_mail
 import regex
 import nltk, sys
 from sqlalchemy import create_engine
@@ -12,9 +12,14 @@ from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 from sklearn.naive_bayes import MultinomialNB
 import joblib
-from Rds_Handle import get_date, create_analyse_table, insert_analysed_data, update_previous_study, \
-    update_gender_percentage
-from app import conn
+from .Rds_Handle import (
+    get_date,
+    create_analyse_table,
+    insert_analysed_data,
+    update_previous_study,
+    update_gender_percentage,
+)
+from .app import conn
 
 # nltk.download('stopwords')
 
