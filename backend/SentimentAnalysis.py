@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from sqlalchemy import create_engine
 import re
+import os
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import spacy, sys
 from .Rds_Handle import (
@@ -22,8 +23,7 @@ q = sys.argv
 
 # available tables: pizza, covid, popcorn, vodka, dollar, quarantine, burger
 
-engine = create_engine(
-    "postgresql://ahmad.cheikh@net.usj.edu.lb:MDPprojet20@redshift-cluster-1.cswcdbzrgcbw.us-east-2.redshift.amazonaws.com:5439/mdpdb1")
+engine = create_engine(os.getenv("REDSHIFT_URL"))
 
 study = q[1]
 query = "SELECT * FROM {}".format(study)

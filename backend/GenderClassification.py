@@ -8,6 +8,7 @@ import regex
 import nltk, sys
 from sqlalchemy import create_engine
 import psycopg2
+import os
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 from sklearn.naive_bayes import MultinomialNB
@@ -23,8 +24,7 @@ from .app import conn
 
 # nltk.download('stopwords')
 
-engine = create_engine(
-    "postgresql://ahmad.cheikh@net.usj.edu.lb:MDPprojet20@redshift-cluster-1.cswcdbzrgcbw.us-east-2.redshift.amazonaws.com:5439/mdpdb1")
+engine = create_engine(os.getenv("REDSHIFT_URL"))
 q = sys.argv
 
 # study = 'amazon'
