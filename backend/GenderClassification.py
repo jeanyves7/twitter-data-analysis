@@ -5,7 +5,6 @@ from sklearn.preprocessing import LabelEncoder
 import re
 import logging
 from .sendMail import send_mail
-import regex
 import nltk, sys
 from sqlalchemy import create_engine
 import psycopg2
