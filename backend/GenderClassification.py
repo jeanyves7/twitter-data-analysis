@@ -24,7 +24,7 @@ from .db import conn
 
 # nltk.download('stopwords')
 
-engine = create_engine(os.getenv("REDSHIFT_URL"))
+engine = create_engine(os.getenv("POSTGRES_URL") or os.getenv("REDSHIFT_URL") or os.getenv("Redshift_URL"))
 logger = logging.getLogger(__name__)
 
 data = pd.read_csv('./ClassificationDataSet.csv', encoding='latin-1')

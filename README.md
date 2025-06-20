@@ -32,6 +32,10 @@ the start of the search.
 
 ### Environment Variables
 
-The application expects a connection string for Amazon Redshift to be provided
-via the `REDSHIFT_URL` environment variable. Set this variable to a valid
-SQLAlchemy connection URI before running the analysis scripts.
+Provide a PostgreSQL connection string via the `POSTGRES_URL` environment
+variable (the legacy `REDSHIFT_URL`/`Redshift_URL` names are also supported).
+This should be a valid SQLAlchemy URI such as
+`postgresql://user:password@localhost:5432/dbname`.
+If you prefer to supply individual connection parameters, set the following
+variables instead: `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`,
+`POSTGRES_PASSWORD`, and `POSTGRES_DB`.

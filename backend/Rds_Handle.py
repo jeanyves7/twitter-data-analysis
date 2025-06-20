@@ -1,4 +1,4 @@
-from pymysql import Connection
+from psycopg2.extensions import connection as Connection
 import pandas as pd, subprocess
 import logging
 

@@ -31,11 +31,11 @@ def config(filename='database.ini', section='postgresql'):
             )
     else:
         db = {
-            'host': os.getenv('host_RDS'),
-            'user': os.getenv('RDS_user'),
-            'password': os.getenv('RDS_pass'),
-            'port': os.getenv('RDS_port'),
-            'dbname': os.getenv('RDS_db'),
+            'host': os.getenv('POSTGRES_HOST', os.getenv('host_RDS')),
+            'user': os.getenv('POSTGRES_USER', os.getenv('RDS_user')),
+            'password': os.getenv('POSTGRES_PASSWORD', os.getenv('RDS_pass')),
+            'port': os.getenv('POSTGRES_PORT', os.getenv('RDS_port')),
+            'dbname': os.getenv('POSTGRES_DB', os.getenv('RDS_db')),
         }
 
     return db
