@@ -1,4 +1,5 @@
 import pandas as pd, subprocess, sys, datetime, tweepy as tw, os
+import logging
 from configparser import ConfigParser
 from sqlalchemy import create_engine
 from .DatabaseConnection import clean, connect
@@ -19,6 +20,8 @@ URL = os.getenv('Redshift_URL')
 # getting the engine for the redshift ready
 engine = create_engine(URL)
 
+logger = logging.getLogger(__name__)
+
 
 def insert_panda(lp, name):
     try:
@@ -26,7 +29,7 @@ def insert_panda(lp, name):
         data = pd.DataFrame(lp)
         data.to_sql(name, engine, index=False, if_exists='append')
     except Exception as e:
-        print("An error occurred while inserting the data " + e.__str__())
+        logger.error("An error occurred while inserting the data " + e.__str__())
 
 
 def create_headers(engine_name, filename='credentials.ini'):
@@ -40,7 +43,7 @@ def create_headers(engine_name, filename='credentials.ini'):
 
         return consumer_key, consumer_secret, access_key, access_secret
     except Exception as e:
-        print("Error encountered : " + e.__str__())
+        logger.error("Error encountered : " + e.__str__())
 
 
 
@@ -54,9 +57,9 @@ def handle_tweet(tweet, country=""):
         for hashe in tweet["entities"]["hashtags"]:
             if hashe is not None:
                 hashes += hashe["text"] + " "
-        print("hashes: ", hashes)
-        print(tweet['favorite_count'] + tweet['retweet_count'])
-        print(tweet['user']['description'])
+        logger.debug("hashes: %s", hashes)
+        logger.debug(tweet['favorite_count'] + tweet['retweet_count'])
+        logger.debug(tweet['user']['description'])
         des = str(tweet['user']['description'])
         description = clean([",", "\n"], des, ' ')
         dicti = {'id': tweet['id_str'], 'name': tweet["user"]["name"], 'screen_name': tweet["user"]["screen_name"],
@@ -78,13 +81,13 @@ def handle_tweet(tweet, country=""):
         dicti['text'] = p
         return dicti
     except Exception as e:
-        print("Error occurred in Handling tweet {}".format(e.__str__()))
+        logger.error("Error occurred in Handling tweet {}".format(e.__str__()))
     #  return False
 
 
 def check_time(stop_date):
     actual_date = datetime.datetime.now()
-    print("actual date: {} VS stop_date: {}".format(actual_date, stop_date))
+    logger.debug("actual date: %s VS stop_date: %s", actual_date, stop_date)
 
     if actual_date >= stop_date:
         return True
@@ -92,7 +95,11 @@ def check_time(stop_date):
 
 
 def get_tweepy_stream(tweepy_query: str, stop_date, country=""):
-    print("starting getting data from tweepy from {} at {}".format(country, datetime.datetime.now().minute))
+    logger.info(
+        "starting getting data from tweepy from %s at %s",
+        country,
+        datetime.datetime.now().minute,
+    )
     search = tweepy_query + " #{}".format(tweepy_query.replace(" ", "_"))
 
     tweets = tw.Cursor(api.search,
@@ -107,12 +114,12 @@ def get_tweepy_stream(tweepy_query: str, stop_date, country=""):
             # print(tweet._json)
             temp = handle_tweet(tweet._json, country)
             # translate
-            print("count: ", c, temp)
+            logger.debug("count: %s %s", c, temp)
             list_tweets.append(temp)
             c += 1
             # for every 150 tweet found we will insert them in the database
             if c == 150:
-                print("inserting in the database")
+                logger.info("inserting in the database")
                 insert_panda(list_tweets, tweepy_query)
                 c = 0
                 list_tweets = []
@@ -120,7 +127,7 @@ def get_tweepy_stream(tweepy_query: str, stop_date, country=""):
                      break
 
     except Exception as e:
-        print("Error occurred {}".format(e.__str__()))
+        logger.error("Error occurred {}".format(e.__str__()))
 
 
 if __name__ == "__main__":
@@ -134,7 +141,7 @@ if __name__ == "__main__":
         date = datetime.datetime.now()
         #date += datetime.timedelta(minutes=time)
         date += datetime.timedelta(days=time)
-        print(date.day, " ", date.month, " ", date.minute, " ", date.hour)
+        logger.debug(f"{date.day}  {date.month}  {date.minute}  {date.hour}")
         # creating the table if not exists
         connect(query)
         # getting the credentials
@@ -156,6 +163,6 @@ if __name__ == "__main__":
         subprocess.Popen(
             'python backend/SentimentAnalysis.py {}'.format(query), shell=True
         )
-        print("done")
+        logger.info("done")
     except Exception as e:
-        print("Error occurred in searchTweet {}".format(e.__str__()))
+        logger.error("Error occurred in searchTweet {}".format(e.__str__()))

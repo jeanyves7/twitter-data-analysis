@@ -1,4 +1,5 @@
 import subprocess
+import logging
 
 import pandas as pd
 import numpy as np
@@ -24,6 +25,7 @@ q = sys.argv
 # available tables: pizza, covid, popcorn, vodka, dollar, quarantine, burger
 
 engine = create_engine(os.getenv("REDSHIFT_URL"))
+logger = logging.getLogger(__name__)
 
 study = q[1]
 query = "SELECT * FROM {}".format(study)
@@ -313,7 +315,7 @@ def save_most_retweets(row):
 
 
 if __name__ == '__main__':
-    print(df.head())
+    logger.debug(df.head())
     try:
         date = get_date()
         study_update = study
@@ -326,23 +328,23 @@ if __name__ == '__main__':
         # # Get the Sentiment and Compound score of each tweet and store it
         df[['compound_score', 'sentiment']] = df['clean_text'].apply(lambda tweet: sentiment_scores(tweet))
         #
-        print(df['text'], df['sentiment'], df['compound_score'])
-        print("Number of tweets: " + str(number_of_tweets))
-        print("Number of positive tweets: " + str(positive_tweets))
-        print("Number of neutral tweets: " + str(neutral_tweets))
-        print("Number of negative tweets: " + str(negative_tweets))
-        print("Overall Compound Score is " + str(get_overall_score()))
-        print("Overall Sentiment is " + get_overall_sentiment())
+        logger.debug(df['text'], df['sentiment'], df['compound_score'])
+        logger.info("Number of tweets: " + str(number_of_tweets))
+        logger.info("Number of positive tweets: " + str(positive_tweets))
+        logger.info("Number of neutral tweets: " + str(neutral_tweets))
+        logger.info("Number of negative tweets: " + str(negative_tweets))
+        logger.info("Overall Compound Score is " + str(get_overall_score()))
+        logger.info("Overall Sentiment is " + get_overall_sentiment())
 
         # Preprocess tweets and generate wordcloud
         df['clean_text'] = df['text'].map(lambda tweet: preprocess_tweets(tweet))
         word_cloud_list = wordcloud_list(df['clean_text'].str.lower())
-        print(word_cloud_list)
+        logger.debug(word_cloud_list)
 
         # # Clean Hashtags and generate wordcloud made up of most common hashtags
         df['hashes'] = df['hashes'].map(lambda hashtag: clean_hashtags(hashtag))
         hashtag_word_cloud = hashtag_wordcloud(df['hashes'].str.lower())
-        print(hashtag_word_cloud)
+        logger.debug(hashtag_word_cloud)
 
         # Save verified users' names in table
         df.loc[(df['verified'] == 'True'), 'verified_users'] = df['name']
@@ -350,25 +352,25 @@ if __name__ == '__main__':
 
         # Get % of every type of user
         user_type_percentages(df['verified_users'])
-        print("Percentage of undetermined users is " + str(percentage_of_other_users))
-        print("Percentage of companies users is " + str(percentage_of_companies))
-        print("Percentage of influences users is " + str(percentage_of_influencers))
+        logger.info("Percentage of undetermined users is " + str(percentage_of_other_users))
+        logger.info("Percentage of companies users is " + str(percentage_of_companies))
+        logger.info("Percentage of influences users is " + str(percentage_of_influencers))
 
         # Fetch wordcloud of companies
         wordcloud_companies = word_cloud_companies(df['verified_users'])
-        print(wordcloud_companies)
+        logger.debug(wordcloud_companies)
 
         # Fetch list of coordinates tuples
         geo_coordinates = (get_list_of_coordinates(df['geo']))
-        print(geo_coordinates)
+        logger.debug(geo_coordinates)
 
         # Get most Liked tweet and number of likes
         df['likes'] = pd.to_numeric(df['likes'])
         most_liked_id = get_most_liked(df['likes'])
         row = df.iloc[most_liked_id]
         most_liked = save_most_likes(row)
-        print(save_most_likes(row))
-        print("Number of likes = " + str(likes_number))
+        logger.debug(save_most_likes(row))
+        logger.info("Number of likes = " + str(likes_number))
 
         # Get most Retweeted tweet and number of retweets
         df['retweets'] = pd.to_numeric(df['retweets'])
@@ -376,8 +378,8 @@ if __name__ == '__main__':
         row = df.iloc[most_retweets_id]
         most_retweet = save_most_retweets(row)
         most_retweet[2]=most_retweet[2].replace('amp;','')
-        print(most_retweet)
-        print("Number of retweets = " + str(rt_number))
+        logger.debug(most_retweet)
+        logger.info("Number of retweets = " + str(rt_number))
 
         insert_analysed_data(study_update, number_tweets=number_of_tweets, positive=positive_tweets,
                              neutral=neutral_tweets,
@@ -392,7 +394,7 @@ if __name__ == '__main__':
         )
 
     except Exception as e:
-        print("Error occurred in Analysing tweets {}".format(e.__str__()))
+        logger.error("Error occurred in Analysing tweets {}".format(e.__str__()))
 
     finally:
         sys.exit(0)

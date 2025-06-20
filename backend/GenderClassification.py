@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 import re
+import logging
 from .sendMail import send_mail
 import regex
 import nltk, sys
@@ -25,6 +26,7 @@ from .app import conn
 # nltk.download('stopwords')
 
 engine = create_engine(os.getenv("REDSHIFT_URL"))
+logger = logging.getLogger(__name__)
 q = sys.argv
 
 # study = 'amazon'
@@ -146,11 +148,13 @@ if __name__ == '__main__':
     df['gender'] = nb.predict(X_unlabeled)
 
     get_gender_nb(df['gender'])
-    print("Number of users: ")
+    logger.info("Number of users: ")
     nb = get_gender_percentage()
-    print(str(nb))
-    print("female and male numbers: " + str(female) + ", " + str(male))
-    print("female and male percentage: " + str(female_percentage) + ", " + str(male_percentage))
+    logger.info(str(nb))
+    logger.info("female and male numbers: " + str(female) + ", " + str(male))
+    logger.info(
+        "female and male percentage: " + str(female_percentage) + ", " + str(male_percentage)
+    )
     update_gender_percentage(study=study, male=male_percentage, female=female_percentage, conn=conn)
     update_previous_study(study, report=True, start=False, conn=conn)
     send_mail(study)

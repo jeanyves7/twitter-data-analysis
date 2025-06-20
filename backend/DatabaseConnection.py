@@ -1,6 +1,9 @@
 import psycopg2
 from configparser import ConfigParser
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def config(filename='database.ini', section='postgresql'):
@@ -51,7 +54,7 @@ def connect(name):
     name = clean([' ', '-'], name, '_')
     try:
         params = config()
-        print('Connecting to Redshift...')
+        logger.info('Connecting to Redshift...')
         conn = psycopg2.connect(**params)
 
         cur = conn.cursor()
@@ -62,8 +65,8 @@ def connect(name):
         conn.commit()
 
     except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
+        logger.error(error)
     finally:
         if conn is not None:
             conn.close()
-            print('Database connection closed.')
+            logger.info('Database connection closed.')

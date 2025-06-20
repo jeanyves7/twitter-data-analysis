@@ -1,10 +1,13 @@
 import pandas as pd, os
+import logging
 from .app import conn
 from .Rds_Handle import update_requested_study, get_hash_id
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 SENDGRID_API_KEY = os.getenv('sendGripKey')
+
+logger = logging.getLogger(__name__)
 
 def send_mail(study):
     try:
@@ -32,4 +35,4 @@ def send_mail(study):
         sg.send(message)
         update_requested_study(study=study, insert=False, conn=conn)
     except Exception as e:
-        print("error occurred: in ", e.__str__())
+        logger.error("error occurred: in %s", e.__str__())
